@@ -13,12 +13,11 @@
         name: 'layout-main',
         computed: {
           key() {
-            console.log(this.$route.path)
             return this.$route.path
           }
         },
         mounted() {
-          console.log(this.$route.path)
+
         }
     }
 </script>

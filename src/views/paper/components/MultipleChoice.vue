@@ -1,11 +1,11 @@
 <template>
-    <div class="mutipleChoice">
+    <div class="multipleChoice">
         <div class="answer">
             <el-row>
                 <!-- <el-checkbox-group :min="1" :max="2"> -->
-                    <el-col v-for="item in mutipleChoice.answer" :key="item.label" :span="mutipleChoice.config.column">
+                    <el-col v-for="item in multipleChoice.answer" :key="item.label" :span="multipleChoice.config.column">
                         <el-checkbox :label="item.label" disabled>
-                            <span v-show="mutipleChoice.config.labelHidden">{{item.label}} . </span>
+                            <span v-show="multipleChoice.config.labelHidden">{{item.label}} . </span>
                                 {{ item.content }}
                         </el-checkbox>
                     </el-col>
@@ -19,7 +19,7 @@
 
 <script>
 export default {
-    name : "mutipleChoice",
+    name : "multipleChoice",
     props: {
         initChoice: {
             type: Object,
@@ -27,8 +27,8 @@ export default {
     },
     data() {
         return {
-            type: "mutipleChoice",
-            mutipleChoice: this.initChoice,
+            type: "multipleChoice",
+            multipleChoice: this.initChoice,
         }
     },
     computed() {
@@ -48,7 +48,7 @@ export default {
 
 <style lang="scss">
 
-    .mutipleChoice {
+    .multipleChoice {
         padding: 5px 5px 5px 5px ;
     
     

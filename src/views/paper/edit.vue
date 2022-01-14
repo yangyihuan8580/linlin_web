@@ -1,4 +1,17 @@
 <template>
+    <div class="paper-header">   
+        <div class="paper-header-right">
+            <el-popconfirm 
+                title="返回将丢失当前操作内容，确定要返回吗？"
+                @confirm="back()"
+            >
+                <template #reference>
+                    <el-button>返回</el-button>
+                </template>
+            </el-popconfirm>
+            <el-button type="primary" @click="savePaper()">提交</el-button>
+        </div>
+    </div>
     <div class="paper-info">
         <div class="paper-left">
             <div class="component">
@@ -36,19 +49,29 @@
                         ghostClass="ghostClass" 
                         chosenClass="chosenClass">
                     <template #item="{ element }">
-                        <div class="component-item">{{element.name}}</div>
+                        <div class="component-item">{{ element.title }}</div>
                     </template>
                 </draggable>
             </div>
         </div>
         <div class="paper-center">
              <el-scrollbar>
-                <div class="paper-title">调查问卷标题</div>
-                <div class="paper-area paper-summary"  v-show="titleChoice">
-                    <title-area :titleArea="paper.titleArea"/>
+                <div class="paper-title">{{ paper.info.title }}</div>
+                <div class="paper-area paper-summary"  v-show="titleChoice" @click="handlerSummaryChoice()">
+                    <div class="topic-content"  >
+                        <div class="area-header">
+                            <div class="area-header-center" >
+                                摘要区
+                            </div>
+                            <div class="area-header-right" @click="handlerDeleteElement(element)">
+                                <el-icon size="13px"><delete /></el-icon>                                 
+                            </div>
+                        </div>
+                        <title-area :content="paper.titleArea.content"/>
+                    </div> 
                 </div>
                 <div class="paper-component">
-                    <draggable :list="areas" 
+                    <draggable :list="paper.topicAreas" 
                             group="group"
                             animation="300"
                             item-key="id"
@@ -59,7 +82,7 @@
                             <div class="paper-area" >
                                 <div class="area-header" @click="handlerAreaChoice(element)">
                                     <div class="area-header-center">
-                                        {{ element.name }}
+                                        {{ element.title }}
                                     </div>
                                     <div class="area-header-right" @click="handlerDeleteArea(element, index)">
                                         <el-icon  size="15px"><delete /></el-icon>                                        
@@ -75,16 +98,16 @@
                                             :sort="rightElementDraggableConfig.sort" 
                                             :empty-insert-threshold="160">
                                         <template #item="{ element, index }">
-                                            <div class="topic-content"  @click="handlerTopicChoice(element, index)">
+                                            <div class="topic-content"  >
                                                 <div class="element-header">
-                                                    <div class="element-header-center">
-                                                        {{ index + 1 }}.{{ element.title.titleContent }}
+                                                    <div class="element-header-center" @click="handlerTopicChoice(element, index)">
+                                                        {{ index + 1 }}.{{ element.title }}
                                                     </div>
-                                                    <div class="element-header-right" @click="handlerDeleteElement(element, index)">
+                                                    <div class="element-header-right" @click="handlerDeleteElement(element)">
                                                         <el-icon size="13px"><delete /></el-icon>                                 
                                                     </div>
                                                 </div>
-                                                <component :is="element.type" :initChoice="element"></component>
+                                                <component :is="element.type" :initChoice="element" @click="handlerTopicChoice(element, index)"></component>
                                             </div> 
                                         </template>
                                     </draggable>
@@ -102,8 +125,16 @@
                 <div style="text-align:center">操作区</div>
                 <div class="right-content">
                     <el-tabs v-model="rightTab" @tab-click="handleTabClick" stretch>
-                        <el-tab-pane label="摘要区" name="summary">用户管理
-                            {{ areas }}
+                        <el-tab-pane label="摘要区" name="summaryConfig">
+                            <el-descriptions class="margin-top" title="摘要区" :column="1" direction="vertical">
+                                <el-descriptions-item label="内容">
+                                    <el-input type="textarea" placeholder="请输入内容" v-model="paper.titleArea.content" 
+                                            show-word-limit
+                                            :autosize="{ minRows: 5, maxRows: 10 }"
+                                            @input="changeSummaryTitle">
+                                    </el-input>
+                                </el-descriptions-item>
+                            </el-descriptions>
                         </el-tab-pane>
                         <el-tab-pane label="区域配置" name="areaConfig">
                             <el-descriptions v-show="currentAreaId != ''" class="margin-top" :title="areaConfig.titleNumber" :column="1" direction="vertical">
@@ -111,37 +142,39 @@
                                     <el-input size="small" placeholder="请输入内容" v-model="areaConfig.title" @input="changeAreaTitle">
                                     </el-input>
                                 </el-descriptions-item>
-                                <el-descriptions-item label="展示label">
-                                    <el-switch v-model="areaConfig.labelHidden"  @change="changeLabelHidden"> </el-switch>
-                                </el-descriptions-item>
                             </el-descriptions>
                             
                         </el-tab-pane>
                         <el-tab-pane label="元素配置" name="elementConfig">
-                            <el-descriptions v-show="currentTopicId != ''" class="margin-top" :title="elementConfig.titleNumber" :column="1" direction="vertical">
-                                <el-descriptions-item label="标题">
-                                    <el-input size="small" placeholder="请输入内容" v-model="elementConfig.title" @input="changeTitle">
-                                    </el-input>
-                                </el-descriptions-item>
-                                <el-descriptions-item label="展示label">
-                                    <el-switch v-model="elementConfig.labelHidden"  @change="changeLabelHidden"> </el-switch>
-                                </el-descriptions-item>
-                                <el-descriptions-item label="排列方式">
-                                    <el-radio-group v-model="elementConfig.column" @change="changeColumn">
-                                        <el-radio :label="24" >一行</el-radio>
-                                        <el-radio :label="12" >两行</el-radio>
-                                        <el-radio :label="6" >四行</el-radio>
-                                    </el-radio-group>
-                                </el-descriptions-item>
-                                <el-descriptions-item label="选项设置">
-                                    <div class="right-config-answer" v-for="(answer, index) in elementConfig.answers" :key="answer.label" >
-                                        <el-input class="input-label" size="small"  v-model="answer.label"></el-input>
-                                        <el-input class="input-content" size="small" v-model="answer.content"></el-input>
-                                        <el-icon @click="removeChoice(index)"><circle-close /></el-icon>
-                                    </div>
-                                    <el-icon @click="addChoice()"><circle-plus /></el-icon>
-                                </el-descriptions-item>
-                            </el-descriptions>
+                            <div v-show="currentTopicId === '0'" >
+                                请选择元素
+                            </div>
+                            <div v-show="currentTopicId != '0'">
+                                <el-descriptions class="margin-top" :title="elementConfig.titleNumber" :column="1" direction="vertical">
+                                    <el-descriptions-item label="标题">
+                                        <el-input size="small" placeholder="请输入内容" v-model="elementConfig.title" @input="changeTitle">
+                                        </el-input>
+                                    </el-descriptions-item>
+                                    <el-descriptions-item v-if="!elementConfig.onlyTitle" label="展示label">
+                                        <el-switch v-model="elementConfig.labelHidden"  @change="changeLabelHidden"> </el-switch>
+                                    </el-descriptions-item>
+                                    <el-descriptions-item v-if="!elementConfig.onlyTitle" label="排列方式">
+                                        <el-radio-group v-model="elementConfig.column" @change="changeColumn">
+                                            <el-radio :label="24" >一行</el-radio>
+                                            <el-radio :label="12" >两行</el-radio>
+                                            <el-radio :label="6" >四行</el-radio>
+                                        </el-radio-group>
+                                    </el-descriptions-item>
+                                    <el-descriptions-item v-if="!elementConfig.onlyTitle" label="选项设置">
+                                        <div class="right-config-answer" v-for="(answer, index) in elementConfig.answers" :key="answer.label" >
+                                            <el-input class="input-label" size="small"  v-model="answer.label"></el-input>
+                                            <el-input class="input-content" size="small" v-model="answer.content"></el-input>
+                                            <el-icon @click="removeChoice(index)"><circle-close /></el-icon>
+                                        </div>
+                                        <el-icon @click="addChoice()"><circle-plus /></el-icon>
+                                    </el-descriptions-item>
+                                </el-descriptions>
+                            </div>
                         </el-tab-pane>
                     </el-tabs>
                 </div>
@@ -154,17 +187,21 @@
 
 <script>
     import TitleArea from './components/TitleArea'
-    import TopicArea from './components/TopicArea'
     import draggable from 'vuedraggable'
     import SingleChoice from './components/SingleChoice.vue'
-    import MutipleChoice from './components/MutipleChoice.vue'
+    import MultipleChoice from './components/MultipleChoice.vue'
+    import FillBlank from './components/FillBlank.vue'
+    import AreaQuestion from './components/AreaQuestion'
     import { Delete, CirclePlus, CircleClose  } from '@element-plus/icons-vue' 
+    import { updateLayout,queryPaperAndAnswer } from '@/api/paper'
+    import { ElMessage } from 'element-plus'
+
     
 
     export default {
         name: 'paper-info',
         components: {
-            TitleArea,TopicArea,draggable,SingleChoice,Delete,MutipleChoice,CirclePlus, CircleClose
+            TitleArea,draggable,SingleChoice,Delete,MultipleChoice,CirclePlus, CircleClose,FillBlank,AreaQuestion
         },
         data() {
             return {
@@ -172,13 +209,15 @@
                     {
                         id: "1",
                         type: "area",
-                        name: '区域',
+                        type: 'topic',
+                        title: '区域',
                         topics: []
                     },
                     {
                         id: "2",
                         type: "area",
-                        name: '区域1',
+                        type: 'topic',
+                        title: '区域1',
                         topics: []
                                          
                     },
@@ -186,15 +225,13 @@
                 elementComponents: [
                     {
                         id: "1",
-                        name: '单选题',
                         type: "singleChoice",
+                        name:'单选题',
+                        title: '请输入标题',
+                        index: '1',
                         config: {
                             column: 24,
                             labelHidden: true
-                        },
-                        title: {
-                            topicIndex: '1',
-                            titleContent: '请输入标题'
                         },
                         answer:[{
                                 label: 'A',
@@ -216,16 +253,14 @@
                     },
                     {
                         id: "2",
-                        type: "mutipleChoice",
+                        type: "multipleChoice",
                         name: '多选题',
                         config: {
                             column: 24,
                             labelHidden: true
                         },
-                        title: {
-                            topicIndex: '1',
-                            titleContent: '请输入标题'
-                        },
+                        index: '1',
+                        title: '请输入标题',
                         answer:[{
                                 label: 'A',
                                 content: '18'
@@ -243,6 +278,26 @@
                                 content: '21'
                             }
                         ]                
+                    },
+                    {
+                        id: "3",
+                        type: "fillBlank",
+                        name: '填空题',
+                        config: {
+                            labelHidden: true
+                        },
+                        index: '1',
+                        title: '请输入标题'             
+                    },
+                    {
+                        id: "4",
+                        type: "areaQuestion",
+                        name: '问答题',
+                        index: '1',
+                        title: '请输入标题',
+                        config: {
+                            labelHidden: true
+                        }          
                     }
                 ],
                 leftAreaDraggableConfig: {
@@ -282,79 +337,44 @@
                     title: '',
                     column: 24,
                     answers: [],
-                    titleNumber: ''
+                    titleNumber: '',
+                    type: '',
+                    onlyTitle: false
                 },
                 areaConfig: {
                     titleNumber: '',
                     title: ''
                 },
-                currentTopicId: '',
+                titleConfig: {
+                    content: ''
+                },
+                currentTopicId: '0',
                 currentAreaId: '',
                 titleChoice: true,
                 rightTab: '',
-                areas: [
-                    {
-                        id: "1",
-                        name: '问题区',
-                        hidden: false,
-                        topics: [
-                            {
-                                id: "10",
-                                name: '单选题',
-                                type: 'mutipleChoice',
-                                config: {
-                                    column: 24,
-                                    labelHidden: true
-                                },
-                                title: {
-                                    topicIndex: '1',
-                                    titleContent: '请输入标题'
-                                },
-                                answer:[{
-                                        label: 'A',
-                                        content: '18'
-                                    },
-                                    {
-                                        label: 'B',
-                                        content: '19'
-                                    },
-                                    {
-                                        label: 'C',
-                                        content: '20'
-                                    },
-                                    {
-                                        label: 'D',
-                                        content: '21'
-                                    }
-                                ]
-                            },
-                        ]           
-                    }
-                ],
-                topics: [
-                    {
-                        id: "10",
-                        name: '单选题'                        
-                    }
-                ],
+                paperId: '',
                 paper: {
-                    titleArea: {
-                        id: '',
-                        hidden: false,
-                        content: ''
+                    info: {
+                        title: '',
+                        id: undefined
                     },
-                    topicArea: [
-                    {
-                        id :"1",
-                        name : "aaa"
-                    }
-                    ]   
-                },
-                area: {
-                    id :"1",
-                    name : "aaa"
+                    titleArea: {
+                        content: '',
+                        type: 'title'
+                    },
+                    topicAreas: [
+
+                    ]
                 }
             }
+        },
+        mounted() {
+            
+        },
+        activated() {
+            this.paperId = this.$route.query.id
+            this.clearPaper()
+            this.queryPaperAndAnswerInfo()
         },
         created() {
             
@@ -383,33 +403,45 @@
             handlerTopicChoice(topic, index) {
                 this.rightTab = 'elementConfig'
                 this.currentTopicId = topic.id
-                this.elementConfig.title = topic.title.titleContent
-                this.elementConfig.labelHidden = topic.config.labelHidden
-                this.elementConfig.answers = topic.answer
-                this.elementConfig.column = topic.config.column
-                this.areas.forEach(area => {
+                this.elementConfig.title = topic.title
+                this.elementConfig.type = topic.type
+                if (topic.type === 'singleChoice' || topic.type === 'multipleChoice') {
+                    this.elementConfig.labelHidden = topic.config.labelHidden
+                    this.elementConfig.answers = topic.answer
+                    this.elementConfig.column = topic.config.column
+                    this.elementConfig.onlyTitle = false
+                } else {
+                    this.elementConfig.onlyTitle = true
+                }
+                this.paper.topicAreas.forEach(area => {
                     const temp = area.topics.find(t => t.id === this.currentTopicId)
                     if (temp != null) {
                         if (topic.type === 'singleChoice') {
-                            this.elementConfig.titleNumber = '单选题：  ' + area.name + '-' + (index + 1)
-                        } else if (topic.type === 'mutipleChoice'){
-                            this.elementConfig.titleNumber = '多选题：  ' + area.name + '-' + (index + 1)
+                            this.elementConfig.titleNumber = '单选题：  ' + area.title + '-' + (index + 1)
+                        } else if (topic.type === 'multipleChoice'){
+                            this.elementConfig.titleNumber = '多选题：  ' + area.title + '-' + (index + 1)
+                        } else if (topic.type === 'fillBlank') {
+                            this.elementConfig.titleNumber = '填空题：  ' + area.title + '-' + (index + 1)
                         }
                     }
                 })
             },
             handlerAreaChoice(area) {
-                this.currentAreaId = area.id
                 this.rightTab = 'areaConfig'
-                this.areaConfig.titleNumber = '区域：  ' + area.name 
-                this.areaConfig.title = area.name 
+                this.currentAreaId = area.id
+                this.areaConfig.titleNumber = '区域：  ' + area.title 
+                this.areaConfig.title = area.title 
+            },
+            handlerSummaryChoice() {
+                this.rightTab = 'summaryConfig'
+                this.titleConfig.content = this.paper.titleArea.content
             },
             getSelectedArea() {
-                return this.areas.find(area => area.id == this.currentAreaId)
+                return this.paper.topicAreas.find(area => area.id == this.currentAreaId)
             },
             getSelectedTopic() {
                 let result;
-                this.areas.forEach(area => {
+                this.paper.topicAreas.forEach(area => {
                     const topic = area.topics.find(t => t.id == this.currentTopicId)
                     if (topic != null) {
                         result = topic
@@ -419,7 +451,7 @@
             },
             changeAreaTitle(value) {
                 const area = this.getSelectedArea()
-                area.name = value
+                area.title = value
             },
             changeLabelHidden(value) {
                 const topic = this.getSelectedTopic()
@@ -427,8 +459,7 @@
             },
             changeTitle(value) {
                 const topic = this.getSelectedTopic()
-                 console.log(topic)
-                topic.title.titleContent = value   
+                topic.title = value   
             },
             addChoice() {
                 this.elementConfig.answers.push({'label': '', 'content': ''})
@@ -440,17 +471,69 @@
                 const topic = this.getSelectedTopic()
                 topic.config.column = value
             },
+            changeSummaryTitle(value) {
+                this.paper.titleArea.content = value
+            },
+            
             handleTabClick(value) {
-                
+
             },
             handlerDeleteArea(area, index) {
-                this.areas.splice(index, 1)
+                this.paper.topicAreas.splice(index, 1)
             },
-            handlerDeleteElement(element, index) {
-                this.areas.forEach(area => {
-                    const index = area.topics.findIndex(topic => topic.id == element.id)
+            handlerDeleteElement(topic) {
+                if (this.currentTopicId === topic.id) {
+                    this.currentTopicId = '0'
+                }
+                this.paper.topicAreas.forEach(area => {
+                    const index = area.topics.findIndex(t => t.id == topic.id)
                     area.topics.splice(index, 1)
                 })
+                
+            },
+            back() {
+                this.$router.push({
+                    path: "index"
+                })
+            },
+            savePaper() {
+                updateLayout(this.paper).then(response => {
+                    if (response.code == 0) {
+                        ElMessage({
+                            message: '修改布局成功',
+                            type: 'success',
+                        })
+                        this.$router.push({
+                            path: "index"
+                        })
+                    }
+                })
+
+            },
+            queryPaperAndAnswerInfo() {
+                queryPaperAndAnswer({id : this.paperId}).then(response => {
+                    if (response.code == 0) {
+                        if (response.content.info != null) {
+                            this.paper.info = response.content.info
+                        }
+                        if (response.content.titleArea != null) {
+                            this.paper.titleArea = response.content.titleArea
+                        }
+                        if (response.content.topicAreas != null) {
+                            this.paper.topicAreas = response.content.topicAreas
+                        }
+                        this.clearConfig()
+                    }
+                })
+            },
+            clearConfig() {
+                this.areaConfig = {}
+                this.elementConfig = {}
+                this.titleConfig = {}
+            },
+            clearPaper() {
+                this.paper.titleArea.content = ''
+                this.paper.topicAreas = []
             }
         }
     }
@@ -458,44 +541,27 @@
 
 <style lang="scss" scoped>
 
-//  .el-aside {
-//     background-color: #d3dce6;
-//     color: var(--el-text-color-primary);
-//     text-align: center;
-//     line-height: 200px;
-//   }
+    .paper-header {
+        width: 100%;
+        height: 50px;
+        background: #EBEEF5;
 
-    .paper-info {
-        display: flex;
-        flex-direction: row;
-        height: calc(100% - 40px);
-        width: calc(100% - 40px);
-        position: absolute;
-
-        .paper-left {
-            height: 100%;
-            width: 20%;
+        .paper-header-right {
+            padding-right: 20px;
+            float: right;
+            line-height: 50px;
         }
-
-        .paper-center {
-            width: 60%;
-            height: 100%;
-        }
-
-        .paper-right {
-            width: 20%;
-            height: 100%;
-        }
-
     }
 
 
     .paper-info {
+        padding-top: 15px;
         display: flex;
         flex-direction: row;
-        height: calc(100% - 40px);
-        width: calc(100% - 40px);
+        height: calc(100% - 50px);
+        width: calc(100% - 20px);
         position: absolute;
+        
     }
 
     .paper-left {

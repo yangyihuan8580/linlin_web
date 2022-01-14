@@ -7,9 +7,9 @@
         <el-header height="60px" class="layout-header">
           <Header></Header>
         </el-header>
-        <el-main class="layout-main">
-          <Main></Main>
-        </el-main>
+        <!-- <el-main class="layout-main"> -->
+          <Main class="layout-main"></Main>
+        <!-- </el-main> -->
       </el-container>
     </el-container>
 </template>

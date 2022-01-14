@@ -42,3 +42,20 @@ export function deletePaper(data) {
 }
 
 
+
+export function updateLayout(data) {
+  return request({
+    url: '/paper/updateLayout',
+    method: 'post',
+    data
+  })
+}
+
+
+export function queryPaperAndAnswer(data) {
+  return request({
+    url: '/paper/queryPaperAndAnswer',
+    method: 'post',
+    data
+  })
+}

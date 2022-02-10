@@ -3,9 +3,12 @@
         <div>
             <el-input
                 type="textarea"
+                v-model="inputValue"
+                @input="changeInput"
+                width="100%"
                 show-word-limit
                 :autosize="{ minRows: 4, maxRows: 4 }"
-                disabled>
+                :disabled="disable">
             </el-input>
         </div>
     </div>
@@ -19,22 +22,32 @@ export default {
     props: {
         initChoice: {
             type: Object,
+        },
+        disable: {
+            type: Boolean,
+            default: true
+        },
+        answer: {
+            type: Object,
+            default: []
         }
+
     },
     data() {
         return {
             type: "areaQuestion",
             areaQuestion: this.initChoice,
+            inputValue: ''
         }
     },
-    computed() {
-
+    created() {
+        this.inputValue = this.answer[this.areaQuestion.id]
     },
-    mounted() {
-
-    },
+    
     methods: {
-        
+        changeInput() {
+            this.answer[this.areaQuestion.id] = this.inputValue
+        }
     }
 
 }
@@ -45,6 +58,7 @@ export default {
 <style lang="scss">
 
     .singleChoice {
+        width: 100%;
         padding: 5px 5px 5px 5px ;
     
     

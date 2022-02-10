@@ -142,6 +142,9 @@
                                     <el-input size="small" placeholder="请输入内容" v-model="areaConfig.title" @input="changeAreaTitle">
                                     </el-input>
                                 </el-descriptions-item>
+                                <el-descriptions-item label="分数" v-if="paper.info.type === 2">
+                                      <el-input-number v-model="areaConfig.score" :min="1" :max="paper.info.score" @change="changeAreaScore" />
+                                </el-descriptions-item>
                             </el-descriptions>
                             
                         </el-tab-pane>
@@ -165,6 +168,9 @@
                                             <el-radio :label="6" >四行</el-radio>
                                         </el-radio-group>
                                     </el-descriptions-item>
+                                    <el-descriptions-item label="分数" v-if="paper.info.type === 2">
+                                        <el-input-number v-model="elementConfig.score" :min="0" :max="paper.info.score" @change="changeElementScore" />
+                                    </el-descriptions-item>
                                     <el-descriptions-item v-if="!elementConfig.onlyTitle" label="选项设置">
                                         <div class="right-config-answer" v-for="(answer, index) in elementConfig.answers" :key="answer.label" >
                                             <el-input class="input-label" size="small"  v-model="answer.label"></el-input>
@@ -172,6 +178,22 @@
                                             <el-icon @click="removeChoice(index)"><circle-close /></el-icon>
                                         </div>
                                         <el-icon @click="addChoice()"><circle-plus /></el-icon>
+                                    </el-descriptions-item>
+                                    <el-descriptions-item label="参考答案" v-if="paper.info.type === 2">
+                                        <el-select 
+                                                v-if="!elementConfig.onlyTitle" 
+                                                v-model="elementConfig.referenceAnswers" 
+                                                :multiple="elementConfig.type === 'multipleChoice'" 
+                                                @change="changeReferenceAnswers"
+                                                placeholder="请选择答案">
+                                            <el-option
+                                            v-for="answer in elementConfig.answers"
+                                            :key="answer.label"
+                                            :label="answer.label"
+                                            :value="answer.label"
+                                            >
+                                            </el-option>
+                                        </el-select>
                                     </el-descriptions-item>
                                 </el-descriptions>
                             </div>
@@ -339,11 +361,14 @@
                     answers: [],
                     titleNumber: '',
                     type: '',
-                    onlyTitle: false
+                    onlyTitle: false,
+                    score: 0,
+                    referenceAnswers: {}
                 },
                 areaConfig: {
                     titleNumber: '',
-                    title: ''
+                    title: '',
+                    score: 0
                 },
                 titleConfig: {
                     content: ''
@@ -356,7 +381,9 @@
                 paper: {
                     info: {
                         title: '',
-                        id: undefined
+                        id: undefined,
+                        score: 100,
+                        type: undefined
                     },
                     titleArea: {
                         content: '',
@@ -364,7 +391,10 @@
                     },
                     topicAreas: [
 
-                    ]
+                    ],
+                    referenceAnswers: {
+
+                    }
                 }
             }
         },
@@ -405,6 +435,9 @@
                 this.currentTopicId = topic.id
                 this.elementConfig.title = topic.title
                 this.elementConfig.type = topic.type
+                if (this.paper.info.type === 2) {
+                    this.elementConfig.referenceAnswers = this.paper.referenceAnswers[topic.id]
+                }
                 if (topic.type === 'singleChoice' || topic.type === 'multipleChoice') {
                     this.elementConfig.labelHidden = topic.config.labelHidden
                     this.elementConfig.answers = topic.answer
@@ -422,6 +455,16 @@
                             this.elementConfig.titleNumber = '多选题：  ' + area.title + '-' + (index + 1)
                         } else if (topic.type === 'fillBlank') {
                             this.elementConfig.titleNumber = '填空题：  ' + area.title + '-' + (index + 1)
+                        } else if (topic.type === 'areaQuestion') {
+                            this.elementConfig.titleNumber = '问答题：  ' + area.title + '-' + (index + 1)
+                        }
+                        if (this.paper.info.type === 2) {
+                            // 设置分数
+                            if (topic.score > 0) {
+                                this.elementConfig.score = topic.score
+                            } else {
+                                this.elementConfig.score = area.score
+                            }
                         }
                     }
                 })
@@ -431,6 +474,7 @@
                 this.currentAreaId = area.id
                 this.areaConfig.titleNumber = '区域：  ' + area.title 
                 this.areaConfig.title = area.title 
+                this.areaConfig.score = area.score
             },
             handlerSummaryChoice() {
                 this.rightTab = 'summaryConfig'
@@ -453,13 +497,24 @@
                 const area = this.getSelectedArea()
                 area.title = value
             },
+            changeAreaScore(value) {
+                const area = this.getSelectedArea()
+                area.score = value
+            },
             changeLabelHidden(value) {
                 const topic = this.getSelectedTopic()
                 topic.config.labelHidden = value
             },
+            changeElementScore(value) {
+                const topic = this.getSelectedTopic()
+                topic.score = value
+            },
             changeTitle(value) {
                 const topic = this.getSelectedTopic()
                 topic.title = value   
+            },
+            changeReferenceAnswers(value) {
+                this.paper.referenceAnswers[this.getSelectedTopic().id] = value
             },
             addChoice() {
                 this.elementConfig.answers.push({'label': '', 'content': ''})
@@ -522,6 +577,9 @@
                         if (response.content.topicAreas != null) {
                             this.paper.topicAreas = response.content.topicAreas
                         }
+                        if (response.content.referenceAnswers != null) {
+                            this.paper.referenceAnswers = response.content.referenceAnswers
+                        }
                         this.clearConfig()
                     }
                 })
@@ -559,14 +617,14 @@
         display: flex;
         flex-direction: row;
         height: calc(100% - 50px);
-        width: calc(100% - 20px);
+        width: calc(100%);
         position: absolute;
         
     }
 
     .paper-left {
         height: 100%;
-        width: 20%;
+        width: 15%;
     }
 
     .paper-center {
@@ -601,8 +659,10 @@
     }
 
     .paper-right {
-        width: 20%;
+        width: 25%;
         height: 100%;
+        padding-right: 5px;
+        padding-left: 5px;
 
         .right-content {
             padding-left: 10px;

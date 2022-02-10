@@ -43,6 +43,10 @@ export const constantRoutes = [
       {
         path: 'role',
         component: () => import('@/views/role/index')
+      },
+      {
+        path: 'userTag',
+        component: () => import('@/views/userTag/index')
       }
     ]
   },
@@ -61,7 +65,43 @@ export const constantRoutes = [
         component: () => import('@/views/paper/edit')
       },
     ]
-  }
+  },
+  {
+    path: '/publishPaper',
+    component: Layout,
+    redirect: '/publishPaper/index',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/publishPaper/index'),
+      },
+      {
+        path: 'examination',
+        component: () => import('@/views/publishPaper/examination'),
+      },
+    ]
+  },
+  {
+    path: '/exam',
+    component: Layout,
+    redirect: '/exam/index',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/exam/index'),
+      }
+    ]
+  },
+
+  {
+    path: '/info',
+    component: () => import('@/views/public/paperInfo'),
+    hidden: true
+  },
+  {
+    path: '/examInfo',
+    component: () => import('@/views/publishPaper/examInfo'),
+  },
 ];
 
 const router = createRouter({

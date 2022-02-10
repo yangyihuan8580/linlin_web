@@ -2,7 +2,10 @@
     <div class="fillBlank">
         <div class="answer">
             <el-row>
-                
+                  <el-input 
+                        v-model="inputValue" 
+                        @input="changeInput"
+                        :disabled="disable"/>
             </el-row>
         </div>
     </div>
@@ -16,22 +19,33 @@ export default {
     props: {
         initChoice: {
             type: Object,
+        },
+        disable: {
+            type: Boolean,
+            default: true
+        },
+        answer: {
+            type: Object,
+            default: []
         }
     },
     data() {
         return {
             type: "fillBlank",
             fillBlank: this.initChoice,
+            inputValue: ''
         }
     },
     computed() {
-
+        
     },
     mounted() {
-
+        this.inputValue = this.answer[this.fillBlank.id]
     },
     methods: {
-        
+        changeInput() {
+            this.answer[this.fillBlank.id] = this.inputValue
+        }
     }
 
 }

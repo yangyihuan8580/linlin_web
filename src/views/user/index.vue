@@ -3,12 +3,15 @@
         <div class="filter-container">
             <el-space wrap size="small">
                 <el-input v-model="listQuery.userName" placeholder="用户名称" style="width: 200px;" class="filter-item" />
-                <el-select v-model="listQuery.identity" placeholder="身份" clearable style="width: 90px" class="filter-item">
+                <el-select v-model="listQuery.identity" placeholder="类型" clearable style="width: 90px" class="filter-item">
                     <el-option v-for="item in identityOptions" :key="item.key" :label="item.label" :value="item.key" />
                 </el-select>
                 <el-select v-model="listQuery.sex" placeholder="性别" clearable class="filter-item" style="width: 130px">
                     <el-option v-for="item in sexOptions" :key="item.label" :label="item.label" :value="item.key" />
                 </el-select>
+                <el-select v-model="listQuery.tagIds" class="filter-item" placeholder="请选择用户身份" multiple >
+                        <el-option v-for="item in tagList" :key="item.id" :label="item.tagName" :value="item.id" />
+                    </el-select>
                 <el-button class="filter-item" type="primary" @click="handleFilter">
                    <el-icon style="vertical-align: middle;">
                         <search />
@@ -36,7 +39,8 @@
                 <el-table-column label="用户id" prop="id" align="center"></el-table-column>
                 <el-table-column label="名称" prop="userName" align="center"></el-table-column>
                 <el-table-column label="性别" prop="sex" align="center"></el-table-column>
-                <el-table-column label="用户身份" prop="identity" align="center"></el-table-column>
+                <el-table-column label="用户类型" prop="identity" align="center"></el-table-column>
+                <el-table-column label="用户身份" prop="tagNames" align="center"></el-table-column>
                 <el-table-column label="操作" align="center" width="300">
                     <template #default="scope">
                         <el-button type="primary" size="small" @click="handleUpdate(scope.row.id)">
@@ -92,9 +96,14 @@
                         <el-option v-for="item in sexOptions" :key="item.key" :label="item.label" :value="item.key" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="用户身份：">
+                <el-form-item label="用户类型：">
                     <el-select v-model="temp.identity" class="filter-item" placeholder="请选择">
                         <el-option v-for="item in identityOptions" :key="item.label" :label="item.label" :value="item.label" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="用户标签：">
+                    <el-select v-model="temp.tagIds" class="filter-item" placeholder="请选择" multiple >
+                        <el-option v-for="item in tagList" :key="item.id" :label="item.tagName" :value="item.id" />
                     </el-select>
                 </el-form-item>
             </el-form>
@@ -114,7 +123,7 @@
 
 
 <script>
-import { addUser, queryList, updateUser, queryOne, deleteUser, insertUserRole, queryUserRole } from '@/api/user'
+import { addUser, queryList, updateUser, queryOne, deleteUser, insertUserRole, queryUserRole, queryTagList } from '@/api/user'
 import { Edit,Search  } from '@element-plus/icons-vue' 
 
 
@@ -134,7 +143,8 @@ export default {
                 importance: undefined,
                 title: undefined,
                 type: undefined,
-                sort: undefined
+                sort: undefined,
+                tagIds: []
             },
             title: '',
             singleTableRef:{},
@@ -147,7 +157,8 @@ export default {
                 userName: '',
                 sex: '',
                 identity: '',
-                password: ''
+                password: '',
+                tagIds: []
             },
             userRole: {
                 userId: undefined,
@@ -161,6 +172,7 @@ export default {
                 children: 'subMenu',
                 label: 'roleName'
             },
+            tagList: [],
             dialogFormVisible: false,
             dialogStatus: '',
             dialogPvVisible: false,
@@ -176,6 +188,7 @@ export default {
     },
     created() {
         this.getList()
+        this.queryTagList()
     },
     methods: {
         getList() {
@@ -183,6 +196,14 @@ export default {
                 if (response.code == 0) {
                     const { content, total } = response
                     this.list = content
+                }
+            })
+        },
+        queryTagList() {
+            queryTagList(this.listQuery).then(response => {
+                if (response.code == 0) {
+                    const { content, total } = response
+                    this.tagList = content
                 }
             })
         },
@@ -293,7 +314,8 @@ export default {
                 userName: '',
                 sex: '',
                 identity: '',
-                password: ''
+                password: '',
+                tagIds: []
             }
         },
         

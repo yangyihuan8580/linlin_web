@@ -52,9 +52,36 @@ export function updateLayout(data) {
 }
 
 
+
+export function queryPaper(data) {
+  return request({
+    url: '/paper/queryPaper',
+    method: 'post',
+    data
+  })
+}
+
+
 export function queryPaperAndAnswer(data) {
   return request({
     url: '/paper/queryPaperAndAnswer',
+    method: 'post',
+    data
+  })
+}
+
+
+export function saveAnswer(data) {
+  return request({
+    url: '/paper/saveAnswer',
+    method: 'post',
+    data
+  })
+}
+
+export function queryAnswer(data) {
+  return request({
+    url: '/paper/queryAnswer',
     method: 'post',
     data
   })

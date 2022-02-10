@@ -4,6 +4,10 @@
             <el-space wrap size="small">
                 <el-input v-model="listQuery.name" placeholder="试卷名称" style="width: 200px;" class="filter-item" />
                 <el-input v-model="listQuery.title" placeholder="试卷标题" style="width: 200px;" class="filter-item" />
+                <el-select v-model="listQuery.type" placeholder="请选择" clearable>
+                        <el-option label="调查问卷" value="1" > </el-option>
+                        <el-option label="考试问卷" value="2" > </el-option>
+                    </el-select>
                 <el-button class="filter-item" type="primary" @click="handleFilter">
                     <el-icon style="vertical-align: middle;">
                         <search />
@@ -31,6 +35,7 @@
                 <el-table-column label="试卷名称" prop="name" align="center"></el-table-column>
                 <el-table-column label="试卷标题" prop="title" align="center"></el-table-column>
                 <el-table-column label="试卷分数" prop="score" align="center"></el-table-column>
+                <el-table-column label="试卷类型" prop="typeName" align="center"></el-table-column>
                 <el-table-column label="操作" align="center" width="300" class-name="small-padding fixed-width">
                     <template #default="scope">
                         <el-button type="primary" size="small" @click="handleUpdate(scope.row.id)">
@@ -57,6 +62,12 @@
                 </el-form-item>
                 <el-form-item label="试卷分数：" prop="score">
                     <el-input v-model="paper.score" />
+                </el-form-item>
+                <el-form-item label="试卷类型：" prop="type">
+                    <el-select v-model="paper.type" placeholder="请选择">
+                        <el-option label="调查问卷" value="1" > </el-option>
+                        <el-option label="考试问卷" value="2" > </el-option>
+                    </el-select>
                 </el-form-item>
             </el-form>
              <template #footer>
@@ -85,7 +96,7 @@ export default {
     data() {
         return {
             tableKey: 0,
-            list: null,
+            list: [],
             total: 0,
             listLoading: true,
             listQuery: {
@@ -98,7 +109,8 @@ export default {
                 id: undefined,
                 name: '',
                 title: '',
-                score: 100
+                score: 100,
+                type: undefined
             },
             dialogFormVisible: false,
             dialogStatus: ''
@@ -111,7 +123,7 @@ export default {
         getList() {
             queryList(this.listQuery).then(response => {
                 if (response.code == 0) {
-                    const { content, total } = response
+                    const { content, total } = response 
                     this.list = content
                 }
             })

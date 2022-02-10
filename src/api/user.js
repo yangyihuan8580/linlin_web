@@ -87,6 +87,31 @@ export function insertUserRole(data) {
   })
 }
 
+export function queryTagList(data) {
+  return request({
+    url: '/user/queryTagList',
+    method: 'post',
+    data
+  })
+}
+
+
+export function insertTag(data) {
+  return request({
+    url: '/user/insertTag',
+    method: 'post',
+    data
+  })
+}
+
+
+export function deleteTag(data) {
+  return request({
+    url: '/user/deleteTag',
+    method: 'post',
+    data
+  })
+}
 
 export function logout() {
   return request({

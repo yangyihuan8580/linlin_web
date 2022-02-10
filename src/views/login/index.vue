@@ -76,8 +76,11 @@ export default {
       handler: function(route) {
         const query = route.query
         if (query) {
+          console.log(query)
           this.redirect = query.redirect
           this.otherQuery = this.getOtherQuery(query)
+          console.log(this.redirect)
+          console.log(this.otherQuery)
         }
       },
       immediate: true
@@ -131,6 +134,16 @@ export default {
       return Object.keys(query).reduce((acc, cur) => {
         if (cur !== 'redirect') {
           acc[cur] = query[cur]
+        } else {
+          let a = query[cur]
+          if (a.indexOf("?") != -1) {
+              var str = a.substr(a.indexOf("?") + 1);
+              console.log(str)
+              let strs = str.split("&");
+              for(var i = 0; i < strs.length; i ++) {
+                acc[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]);
+              }
+          }
         }
         return acc
       }, {})

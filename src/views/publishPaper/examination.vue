@@ -2,7 +2,7 @@
     <div class="app-container">
         <div class="filter-container">
             <el-space wrap size="small">
-                <el-input v-model="listQuery.userName" placeholder="aaa" style="width: 200px;" class="filter-item" />
+                <el-input v-model="listQuery.userName" placeholder="用户名称" style="width: 200px;" class="filter-item" />
                 <el-button class="filter-item" type="primary" @click="handleFilter">
                     <el-icon style="vertical-align: middle;">
                         <search />
@@ -17,8 +17,13 @@
                 border
             >
                 <el-descriptions-item label="试卷名称">{{ publishPaper.paperName }}</el-descriptions-item>
-                <el-descriptions-item label="提交人数">{{ publishPaper.commitCount }}</el-descriptions-item>
                 <el-descriptions-item label="总分数">{{ publishPaper.score }}</el-descriptions-item>
+                <el-descriptions-item label="总人数">{{ publishPaper.count }}</el-descriptions-item>
+                <el-descriptions-item label=""></el-descriptions-item>
+                <el-descriptions-item label="提交人数">{{ publishPaper.commitCount }}</el-descriptions-item>
+                <el-descriptions-item label="未提交人数">{{ publishPaper.count - publishPaper.commitCount }}</el-descriptions-item>
+                <el-descriptions-item label="完成审卷人数">{{ publishPaper.auditedCount }}</el-descriptions-item>
+                <el-descriptions-item label="未完成审卷人数">{{ publishPaper.count - publishPaper.auditedCount }}</el-descriptions-item>
             </el-descriptions>
         </div>
           
@@ -31,12 +36,11 @@
                 highlight-current-row
                 style="width: 100%;"
                 >
-                <el-table-column label="id" prop="id" align="center" width="60px"></el-table-column>
+                <el-table-column label="用户id" prop="id" align="center" width="80px"></el-table-column>
                 <el-table-column label="学生名称" prop="userName" align="center"></el-table-column>
                 <el-table-column label="总题目数" prop="topicCount" align="center"></el-table-column>
                 <el-table-column label="已审题目数" prop="auditedCount" align="center"></el-table-column>
-                <el-table-column label="分数" prop="score" align="center"></el-table-column>
-                <el-table-column label="状态" prop="score" align="center"></el-table-column>
+                <el-table-column label="最终得分" prop="score" align="center"></el-table-column>
                 <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
                     <template #default="scope">
                          <el-button type="primary"  size="small" @click="handlerExam(scope.row)">

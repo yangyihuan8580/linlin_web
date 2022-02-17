@@ -92,6 +92,29 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/score',
+    component: Layout,
+    redirect: '/score/index',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/score/index'),
+      }
+    ]
+  },
+  {
+    path: '/statisticScore',
+    component: Layout,
+    redirect: '/statisticScore/index',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/statisticScore/index'),
+      }
+    ]
+  },
+  
 
   {
     path: '/info',

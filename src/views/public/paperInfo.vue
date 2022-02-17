@@ -2,7 +2,9 @@
 .<template>
     <div class="paper-constainer">
         <div class="paper-left">
-                
+            <el-affix :offset="120" v-if="publishPaperId != null">
+                   <div class="countDown">考试倒计时:{{ time }}</div>
+            </el-affix>
         </div>
         <div class="paper-center">
             <div class="paper-title">
@@ -13,7 +15,7 @@
             </div>
             <el-form :model="answer" label-position="top" >
                 <div v-for="topicArea in paper.topicAreas" :key="topicArea.id">
-                    <div class="area-title">
+                    <div v-if="topicArea.areaNameHidden" class="area-title" :style="handlerAlign(topicArea)">
                         {{ topicArea.title }}
                     </div>
                     <div v-for="(topic, index) in topicArea.topics" :key="topic.id">
@@ -29,7 +31,8 @@
                 </div>
                 <el-form-item>
                     <el-button v-if="!disable" type="primary" @click="onSubmit">提交</el-button>
-                    <el-button @click="onCancel">取消</el-button>
+                    <el-button v-if="!disable" @click="onCancel">取消</el-button>
+                    <el-button v-if="disable" @click="OnReturn">返回</el-button>
                 </el-form-item>
             </el-form>
         </div>
@@ -43,13 +46,17 @@
 <script>
 
     import { queryPaperAndAnswer, saveAnswer, queryAnswer } from '@/api/paper'
+    import { queryOne as queryPublishPaperOne } from '@/api/publishPaper'
     import { queryOne } from '@/api/user'
+    import { decrypt } from '@/api/exam'
+
     import SingleChoice from '../paper/components/SingleChoice.vue'
     import MultipleChoice from '../paper/components/MultipleChoice.vue'
     import FillBlank from '../paper/components/FillBlank.vue'
     import AreaQuestion from '../paper/components/AreaQuestion'
     import Audit from '../public/audit'
-    import { ElMessage } from 'element-plus'
+    import rsa from '@/utils/rsa'
+    import { ElMessageBox, ElMessage } from 'element-plus'
 
 
     export default {
@@ -93,38 +100,43 @@
                 user: {
 
                 },
+                publishPaper: {
+                    endTime: ''
+                },
                 paperId: undefined,
                 userId: undefined,
                 examId: undefined,
+                publishPaperId: undefined,
                 disable: false,
-                onlyShowError: false
+                onlyShowError: false,
+                time: undefined
             }
-        },
-        activated() {
-            this.paperId = this.$route.query.paperId
-            this.userId = this.$route.query.userId
-            this.examId = this.$route.query.examId
-            let d = this.$route.query.disable
-            if (d === 'true') {
-                this.disable = true 
-            } else {
-                this.disable = false 
-            }
-            this.queryPaper()
-            this.queryUser()
         },
         created() {
-            this.paperId = this.$route.query.paperId
-            this.userId = this.$route.query.userId
-            this.examId = this.$route.query.examId
-            let d = this.$route.query.disable
-            if (d === 'true') {
-                this.disable = true 
-            } else {
-                this.disable = false 
-            }
-            this.queryPaper()
-            this.queryUser()
+            let a = this.$route.query.t;
+            decrypt({key: a}).then(response => {
+                if (response.code === 0) {
+                    this.paperId = response.content.paperId
+                    this.userId = response.content.userId
+                    this.examId = response.content.examId
+                    this.publishPaperId = response.content.publishPaperId
+                    let d = response.content.disable
+                    if (d === 'true') {
+                        this.disable = true 
+                    } else {
+                        this.disable = false 
+                    }
+                    this.queryPublishPaperOne()
+                    this.queryPaper()
+                    this.queryUser()
+                } else {
+                    ElMessage({
+                        message: '信息不完成，请重新进入',
+                        type: 'error',
+                        duration: 5 * 1000
+                    })
+                }
+            })
         },
         methods: {
             queryPaper() {
@@ -153,11 +165,16 @@
                         }
                     })
             },
+            handlerAlign(element) {
+                return {
+                    'text-align': element.align == 0 ? 'left' : element.align == 1 ? 'center' : 'right'
+                }
+            },
             getTopicLabel(topic, index) {
                 if (this.paper.info.type === 2) {
-                    return (index + 1) + '.' + topic.title + '   (' + topic.score + '分)'
+                    return (topic.index) + '. ' + topic.title + '   (' + topic.score + '分)'
                 } else {
-                    return (index + 1) + '.' + topic.title
+                    return (topic.index) + '. ' + topic.title
                 }
             },
             queryUser() {
@@ -167,6 +184,42 @@
                         this.user = content
                     }
                 })
+            },
+            queryPublishPaperOne() {
+                if (this.publishPaperId != null) {
+                    queryPublishPaperOne({id: this.publishPaperId}).then(response => {
+                        if (response.code == 0) {
+                            const { content } = response
+                            this.publishPaper = content
+                            this.countDown()
+                        }
+                    })
+                }
+                
+            },
+            countDown() {
+                let time = (new Date(this.publishPaper.endTime) - new Date())/1000;
+                this.time = this.formateSeconds(time)
+                let clock = window.setInterval(() => {
+                    time--
+                    this.time = this.formateSeconds(time)
+                },1000)
+            },
+            formateSeconds(endTime){
+                let secondTime = parseInt(endTime)//将传入的秒的值转化为Number
+                let min = 0// 初始化分
+                let h =0// 初始化小时
+                let result=''
+                if(secondTime>60){//如果秒数大于60，将秒数转换成整数
+                    min=parseInt(secondTime/60)//获取分钟，除以60取整数，得到整数分钟
+                    secondTime=parseInt(secondTime%60)//获取秒数，秒数取佘，得到整数秒数
+                    if(min>60){//如果分钟大于60，将分钟转换成小时
+                    h=parseInt(min/60)//获取小时，获取分钟除以60，得到整数小时
+                    min=parseInt(min%60) //获取小时后取佘的分，获取分钟除以60取佘的分
+                    }
+                }
+                result=`${h.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}:${secondTime.toString().padStart(2,'0')}`
+                return result 
             },
             handlerChange() {
                 this.examAnswerStatistic = {
@@ -219,6 +272,9 @@
                 }).then(() => {
                     this.$router.push({path: '/exam/index'})
                 })   
+            },
+            OnReturn() {
+                this.$router.push({path: '/exam/index'})
             }
         }
     }
@@ -226,6 +282,10 @@
 </script>
 
 <style lang="scss" scoped>
+
+    .countDown {
+        float: right;
+    }
 
     .paper-constainer {
 
@@ -263,14 +323,14 @@
                 width: 100%;
                 word-break: break-word;
                 text-indent:2em;
-                padding-bottom: 10px;
+                padding-bottom: 30px;
             }
             
 
 
             .area-title {
                 text-align: center;
-                font-size: 19px;
+                font-size: 17px;
                 font-weight: bold;
             }
         }

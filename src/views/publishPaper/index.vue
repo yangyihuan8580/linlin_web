@@ -31,8 +31,9 @@
                 <el-table-column label="开始时间" prop="startTime" align="center"></el-table-column>
                 <el-table-column label="结束时间" prop="endTime" align="center"></el-table-column>
                 <el-table-column label="参考人员标签" prop="tagNames" align="center"></el-table-column>
-                <el-table-column label="提交人数" prop="commitCount" align="center"></el-table-column>
-                <el-table-column label="状态" prop="statusName" align="center"></el-table-column>
+                <el-table-column label="总人数" prop="count" align="center" width="80px"></el-table-column>
+                <el-table-column label="提交人数" prop="commitCount" align="center" width="90px"></el-table-column>
+                <el-table-column label="状态" prop="statusName" align="center" width="80px"></el-table-column>
                 <el-table-column label="操作" align="center" width="300" class-name="small-padding fixed-width">
                     <template #default="scope">
                         <el-button v-if="scope.row.status === 0" type="primary" size="small" @click="handleUpdate(scope.row.id)">
@@ -152,7 +153,7 @@
                 })
             },
             getPaperList() {
-                queryList({}).then(response => {
+                queryList({status: 1}).then(response => {
                     if (response.code == 0) {
                         const { content, total } = response 
                         this.paperList = content

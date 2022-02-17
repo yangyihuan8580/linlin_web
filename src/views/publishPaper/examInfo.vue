@@ -13,7 +13,7 @@
             </div>
             <el-form :model="answer" label-position="top" >
                 <div v-for="topicArea in paper.topicAreas" :key="topicArea.id">
-                    <div class="area-title">
+                    <div class="area-title" :style="handlerAlign(topicArea)">
                         {{ topicArea.title }}
                     </div>
                     <div v-for="(topic, index) in topicArea.topics" :key="topic.id">
@@ -25,36 +25,38 @@
                                 :disable="true">
                             </component>
 
-                            <audit :answerDetail="answerDetail[topic.id]" @handlerChange="handlerChange" />
+                            <audit :answerDetail="answerDetail[topic.id]" @handlerChange="handlerChange" :disable="disable"/>
                         </el-form-item>
                     </div>
                 </div>
                 <el-form-item>
-                    <el-button type="primary" @click="onSubmit">提交</el-button>
+                    <el-button  v-if="!disable" type="primary" @click="onSubmit">提交</el-button>
                     <el-button @click="onCancel">取消</el-button>
                 </el-form-item>
             </el-form>
         </div>
         <div class="paper-right">
-            <el-affix :offset="120" >
+            <el-affix :offset="120">
                 <div>
-                    <div>
+                    <div v-if="!disable" >
                         <el-button @click="onlyShowError = false">展示所有题目</el-button>
                         <el-button @click="onlyShowError = true">展示未批题目</el-button>
                     </div>
                     <el-descriptions
                         class="margin-top"
-                        title="成绩信息"
+                        title="成绩汇总信息"
                         :column="1"
                         size="large"
                     >
                         <el-descriptions-item label="学生姓名：">{{ user.userName }}</el-descriptions-item>
-                        <el-descriptions-item label="分数：">{{ examAnswerStatistic.score }}</el-descriptions-item>
+                        <el-descriptions-item label="总分数：">{{ examAnswerStatistic.score }}</el-descriptions-item>
                         <el-descriptions-item label="题目数：">{{ examAnswerStatistic.topicCount }}</el-descriptions-item>
-                        <el-descriptions-item label="已审核题目数：">{{ examAnswerStatistic.auditedCount }}</el-descriptions-item>
-                        <el-descriptions-item label="未审核题目数：">{{ examAnswerStatistic.notReviewCount }}</el-descriptions-item>
+                        <el-descriptions-item v-if="!disable"  label="已审核题目数：">{{ examAnswerStatistic.auditedCount }}</el-descriptions-item>
+                        <el-descriptions-item v-if="!disable"  label="未审核题目数：">{{ examAnswerStatistic.notReviewCount }}</el-descriptions-item>
                         <el-descriptions-item label="正确题目数：">{{ examAnswerStatistic.rightAnswerCount }}</el-descriptions-item>
+                        <el-descriptions-item label="正确分数：">{{ examAnswerStatistic.rightAnswerScore }}分</el-descriptions-item>
                         <el-descriptions-item label="错误题目数：">{{ examAnswerStatistic.errorAnswerCount }}</el-descriptions-item>
+                        <el-descriptions-item label="错误分数：">{{ examAnswerStatistic.errorAnswerScore }}分</el-descriptions-item>
                     </el-descriptions>
                 </div>
             </el-affix>
@@ -95,7 +97,9 @@
                     auditedCount: 0,
                     notReviewCount: 0,
                     rightAnswerCount: 0,
-                    errorAnswerCount: 0
+                    rightAnswerScore: 0,
+                    errorAnswerCount: 0,
+                    errorAnswerScore: 0,
                 },
                 paper: {
                     info: {
@@ -120,6 +124,7 @@
                 paperId: undefined,
                 userId: undefined,
                 examId: undefined,
+                disable: false,
                 publishPaperId: undefined,
                 onlyShowError: false
             }
@@ -128,6 +133,7 @@
             this.paperId = this.$route.query.paperId
             this.userId = this.$route.query.userId
             this.examId = this.$route.query.examId
+            this.disable = this.$route.query.disable
             this.queryPaper()
             this.queryUser()
         },
@@ -135,6 +141,7 @@
             this.paperId = this.$route.query.paperId
             this.userId = this.$route.query.userId
             this.examId = this.$route.query.examId
+            this.disable = this.$route.query.disable
             this.queryPaper()
             this.queryUser()
         },
@@ -168,9 +175,14 @@
             },
             getTopicLabel(topic, index) {
                 if (this.paper.info.type === 2) {
-                    return (index + 1) + '.' + topic.title + '   (' + topic.score + '分)'
+                    return (topic.index) + '.' + topic.title + '   (' + topic.score + '分)'
                 } else {
-                    return (index + 1) + '.' + topic.title
+                    return (topic.index) + '.' + topic.title
+                }
+            },
+            handlerAlign(element) {
+                return {
+                    'text-align': element.align == 0 ? 'left' : element.align == 1 ? 'center' : 'right'
                 }
             },
             queryUser() {
@@ -194,7 +206,9 @@
                     auditedCount: 0,
                     notReviewCount: 0,
                     rightAnswerCount: 0,
+                    rightAnswerScore: 0,
                     errorAnswerCount: 0,
+                    errorAnswerScore: 0,
                     topicCount: 0
                 }
                 for(var topicId in this.answerDetail) {
@@ -202,8 +216,10 @@
                     if (detail.proper != 0) {
                         if (detail.score === detail.correctScore) {
                             this.examAnswerStatistic.rightAnswerCount += 1
+                            this.examAnswerStatistic.rightAnswerScore += detail.score
                         } else {
                             this.examAnswerStatistic.errorAnswerCount += 1
+                            this.examAnswerStatistic.errorAnswerScore += detail.score
                         }
                         this.examAnswerStatistic.score += detail.score
                         this.examAnswerStatistic.auditedCount += 1
@@ -221,15 +237,23 @@
                     auditedCount: this.examAnswerStatistic.auditedCount,
                     notReviewCount: this.examAnswerStatistic.notReviewCount,
                     rightAnswerCount: this.examAnswerStatistic.rightAnswerCount,
+                    rightAnswerScore: this.examAnswerStatistic.rightAnswerScore,
+                    errorAnswerScore: this.examAnswerStatistic.errorAnswerScore,
                     errorAnswerCount: this.examAnswerStatistic.errorAnswerCount,
                     examDetailMap: this.answerDetail
                 }
                 commitExam(exam).then(response => {
                     if (response.code == 0) {
-                        ElMessage({
-                            message: '提交成功',
-                            type: 'success',
-                        })
+                        this.$confirm('确定将当前审卷内容提交吗?', '提示', {
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消',
+                            type: 'warning'
+                        }).then(() => {
+                            this.$router.push({path: '/publishPaper/examination',
+                            query:{
+                                id : this.publishPaperId
+                            }});
+                        })   
                     }
                 })
             },      
@@ -242,10 +266,15 @@
                     cancelButtonText: '取消',
                     type: 'warning'
                 }).then(() => {
-                    this.$router.push({path: '/publishPaper/examination',
-                     query:{
-                        id : this.publishPaperId
-                    }});
+                    if (this.disable) {
+                        this.$router.push({path: '/score/index'});
+                    } else {
+                        this.$router.push({path: '/publishPaper/examination',
+                        query:{
+                            id : this.publishPaperId
+                        }});
+                    }
+                    
                 })   
             }
         }

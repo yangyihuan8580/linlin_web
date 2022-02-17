@@ -47,6 +47,9 @@
                         <el-button type="danger"  size="small" @click="handleDelete(scope.row.id)">
                             删除
                         </el-button>
+                        <el-button type="primary"  size="small" @click="handleExport(scope.row.id)">
+                            打印
+                        </el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -86,7 +89,7 @@
 
 
 <script>
-import { addPaper, queryList, updatePaper, queryOne, deletePaper } from '@/api/paper'
+import { addPaper, queryList, updatePaper, queryOne, deletePaper, exportPaper } from '@/api/paper'
 import { Edit,Search  } from '@element-plus/icons-vue' 
 
 export default {
@@ -161,6 +164,12 @@ export default {
                     }
                 })
             })
+        },
+        handleExport(id) {
+            window.open("http://localhost:8080/api/paper/export?examId="+ id) 
+            // exportPaper({examId : id}).then(response => {
+                
+            // })
         },
         handlePaperLayout(id) {
             this.$router.push({path: '/paper/edit',//rooter配置的name值

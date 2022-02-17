@@ -13,7 +13,7 @@
             </el-row>
         
         <div >
-            <el-input-number v-model="answerDetail.score" :min="0" :max="answerDetail.correctScore" @change="handleChange" />
+            <el-input-number v-if="!disable" v-model="answerDetail.score" :min="0" :max="answerDetail.correctScore" @change="handleChange" />
             <el-image
                 v-if="getImageSrc() != null"
                 class="answer-image"
@@ -31,18 +31,11 @@
 
 
 import {
-        Search,
-        Edit,
         Check,
-        Message,
-        Star,
-        Delete,
     } from '@element-plus/icons-vue'
 
     import error from '../../img/error.png'
     import right from '../../img/right.png'
-    import { defineProps, reactive, defineEmit, useContext } from 'vue' 
-
 
 export default {
     name : "audit",
@@ -53,6 +46,10 @@ export default {
         answerDetail: {
             type: Object,
             default: {}
+        },
+        disable: {
+            type: Boolean,
+            default: false
         }
     },
     data() {

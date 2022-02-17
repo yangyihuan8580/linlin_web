@@ -86,3 +86,37 @@ export function queryAnswer(data) {
     data
   })
 }
+
+export function exportPaper(data) {
+  return request({
+    url: '/paper/export?examId=' + data.examId,
+    method: 'get'
+  })
+}
+
+
+export function statisticByPaperId(data) {
+  return request({
+    url: '/exam/statisticByPaperId',
+    method: 'post',
+    data
+  })
+}
+
+export function statisticByAreaId(data) {
+  return request({
+    url: '/exam/statisticByAreaId',
+    method: 'post',
+    data
+  })
+}
+
+
+export function statisticByTopicId(data) {
+  return request({
+    url: '/exam/statisticByTopicId',
+    method: 'post',
+    data
+  })
+}
+

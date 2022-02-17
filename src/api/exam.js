@@ -27,4 +27,18 @@ export function commitExam(data) {
 }
 
 
+export function encrypt(data) {
+  return request({
+    url: '/exam/encrypt',
+    method: 'post',
+    data
+  })
+}
 
+export function decrypt(data) {
+  return request({
+    url: '/exam/decrypt',
+    method: 'post',
+    data
+  })
+}

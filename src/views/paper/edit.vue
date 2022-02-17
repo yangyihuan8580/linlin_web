@@ -1,5 +1,11 @@
 <template>
     <div class="paper-header">   
+        <div class="paper-header-left">
+            总分数：{{ paper.info.score }}分
+        </div>
+        <div class="paper-header-left">
+            当前已设置分数：{{ currentScore }}分
+        </div>
         <div class="paper-header-right">
             <el-popconfirm 
                 title="返回将丢失当前操作内容，确定要返回吗？"
@@ -77,11 +83,11 @@
                             item-key="id"
                             :forceFallback="true" 
                             :empty-insert-threshold="160"
-                            :sort="rightAreaDraggableConfig.sort">
+                            @end="onEnd">
                         <template #item="{ element, index }">
                             <div class="paper-area" >
-                                <div class="area-header" @click="handlerAreaChoice(element)">
-                                    <div class="area-header-center">
+                                <div class="area-header" :style="handlerAlign(element)" @click="handlerAreaChoice(element)">
+                                    <div v-if="element.areaNameHidden" class="area-header-center">
                                         {{ element.title }}
                                     </div>
                                     <div class="area-header-right" @click="handlerDeleteArea(element, index)">
@@ -96,12 +102,14 @@
                                             item-key="id"
                                             :forceFallback="true"
                                             :sort="rightElementDraggableConfig.sort" 
+                                            @end="onEnd"
                                             :empty-insert-threshold="160">
                                         <template #item="{ element, index }">
                                             <div class="topic-content"  >
                                                 <div class="element-header">
                                                     <div class="element-header-center" @click="handlerTopicChoice(element, index)">
-                                                        {{ index + 1 }}.{{ element.title }}
+                                                        {{ element.index }}.{{ element.title }}
+                                                        <span v-if="element.score != null && element.score != 0"> ({{ element.score }}分) </span>
                                                     </div>
                                                     <div class="element-header-right" @click="handlerDeleteElement(element)">
                                                         <el-icon size="13px"><delete /></el-icon>                                 
@@ -142,11 +150,17 @@
                                     <el-input size="small" placeholder="请输入内容" v-model="areaConfig.title" @input="changeAreaTitle">
                                     </el-input>
                                 </el-descriptions-item>
-                                <el-descriptions-item label="分数" v-if="paper.info.type === 2">
-                                      <el-input-number v-model="areaConfig.score" :min="1" :max="paper.info.score" @change="changeAreaScore" />
+                                <el-descriptions-item v-if="!elementConfig.onlyTitle" label="展示区域名称">
+                                    <el-switch v-model="areaConfig.areaNameHidden"  @change="changeAreaLabelHidden"> </el-switch>
+                                </el-descriptions-item>
+                                <el-descriptions-item label="展示位置">
+                                      <el-radio-group v-model="areaConfig.align" @change="changeAreaAlign">
+                                            <el-radio :label="0" >靠左</el-radio>
+                                            <el-radio :label="1" >居中</el-radio>
+                                            <el-radio :label="2" >靠右</el-radio>
+                                        </el-radio-group>
                                 </el-descriptions-item>
                             </el-descriptions>
-                            
                         </el-tab-pane>
                         <el-tab-pane label="元素配置" name="elementConfig">
                             <div v-show="currentTopicId === '0'" >
@@ -163,14 +177,25 @@
                                     </el-descriptions-item>
                                     <el-descriptions-item v-if="!elementConfig.onlyTitle" label="排列方式">
                                         <el-radio-group v-model="elementConfig.column" @change="changeColumn">
-                                            <el-radio :label="24" >一行</el-radio>
-                                            <el-radio :label="12" >两行</el-radio>
-                                            <el-radio :label="6" >四行</el-radio>
+                                            <el-radio :label="24" >一列</el-radio>
+                                            <el-radio :label="12" >两列</el-radio>
+                                            <el-radio :label="6" >四列</el-radio>
                                         </el-radio-group>
                                     </el-descriptions-item>
-                                    <el-descriptions-item label="分数" v-if="paper.info.type === 2">
+                                    
+                                    <el-descriptions-item label="填空数" v-if="paper.info.type === 2 &&  elementConfig.type === 'fillBlank'">
+                                        <el-input-number v-model="elementConfig.partCount" :min="1" :max="paper.info.score" @change="changeElementPartCount" />
+                                    </el-descriptions-item>
+                                    <el-descriptions-item label="完全正确分数" v-if="paper.info.type === 2">
                                         <el-input-number v-model="elementConfig.score" :min="0" :max="paper.info.score" @change="changeElementScore" />
                                     </el-descriptions-item>
+                                    <el-descriptions-item label="部分正确分数" v-if="paper.info.type === 2 &&  elementConfig.type === 'multipleChoice'">
+                                        <el-input-number  v-model="elementConfig.partScore" :min="0" :max="paper.info.score" @change="changeElementPartScore" />
+                                    </el-descriptions-item>
+                                    <el-descriptions-item label="每空分数" v-if="paper.info.type === 2 &&  elementConfig.type === 'fillBlank'">
+                                        <el-input-number  v-model="elementConfig.partScore" :min="0" :max="paper.info.score" @change="changeElementPartScore" />
+                                    </el-descriptions-item>
+
                                     <el-descriptions-item v-if="!elementConfig.onlyTitle" label="选项设置">
                                         <div class="right-config-answer" v-for="(answer, index) in elementConfig.answers" :key="answer.label" >
                                             <el-input class="input-label" size="small"  v-model="answer.label"></el-input>
@@ -179,11 +204,17 @@
                                         </div>
                                         <el-icon @click="addChoice()"><circle-plus /></el-icon>
                                     </el-descriptions-item>
+                                    <el-descriptions-item label="参考答案是否顺序" v-if="paper.info.type === 2 && elementConfig.type === 'fillBlank'">
+                                        <el-radio-group v-model="elementConfig.fillAnswerSort" @change="changefillAnswerSort">
+                                            <el-radio :label="1" >是</el-radio>
+                                            <el-radio :label="0" >否</el-radio>
+                                        </el-radio-group>
+                                    </el-descriptions-item>
                                     <el-descriptions-item label="参考答案" v-if="paper.info.type === 2">
                                         <el-select 
-                                                v-if="!elementConfig.onlyTitle" 
+                                                v-if="!elementConfig.onlyTitle && elementConfig.type === 'multipleChoice'" 
                                                 v-model="elementConfig.referenceAnswers" 
-                                                :multiple="elementConfig.type === 'multipleChoice'" 
+                                                multiple
                                                 @change="changeReferenceAnswers"
                                                 placeholder="请选择答案">
                                             <el-option
@@ -194,6 +225,27 @@
                                             >
                                             </el-option>
                                         </el-select>
+                                        <el-select 
+                                                v-if="!elementConfig.onlyTitle && elementConfig.type === 'singleChoice'" 
+                                                v-model="elementConfig.referenceAnswers" 
+                                                @change="changeReferenceAnswers"
+                                                placeholder="请选择答案">
+                                            <el-option
+                                            v-for="answer in elementConfig.answers"
+                                            :key="answer.label"
+                                            :label="answer.label"
+                                            :value="answer.label"
+                                            >
+                                            </el-option>
+                                        </el-select>
+                                        <div v-if="elementConfig.type === 'fillBlank'" >
+                                            <el-input 
+                                                v-for="index in elementConfig.partCount"
+                                                :key = "index"
+                                                size="small" placeholder="请输入内容" v-model="elementConfig.referenceAnswers[index - 1]" @input="changeFillReferenceAnswers">
+                                            </el-input>
+                                        </div>
+                                        
                                     </el-descriptions-item>
                                 </el-descriptions>
                             </div>
@@ -363,12 +415,17 @@
                     type: '',
                     onlyTitle: false,
                     score: 0,
+                    partScore: 0,
+                    partCount: 1,
+                    fillAnswerSort: 0,
                     referenceAnswers: {}
                 },
                 areaConfig: {
                     titleNumber: '',
                     title: '',
-                    score: 0
+                    score: 0,
+                    areaNameHidden: true,
+                    align: 1
                 },
                 titleConfig: {
                     content: ''
@@ -395,7 +452,8 @@
                     referenceAnswers: {
 
                     }
-                }
+                },
+                currentScore: 0
             }
         },
         mounted() {
@@ -428,7 +486,18 @@
 
             },
             onEnd() {
-
+                console.log("拖拽结束")
+                let i = 1;
+                this.paper.topicAreas.forEach(area => {
+                    area.topics.forEach(topic => {
+                        topic.index = i++;
+                    });
+                })
+            },
+            handlerAlign(element) {
+                return {
+                    'text-align': element.align == 0 ? 'left' : element.align == 1 ? 'center' : 'right'
+                }
             },
             handlerTopicChoice(topic, index) {
                 this.rightTab = 'elementConfig'
@@ -436,8 +505,16 @@
                 this.elementConfig.title = topic.title
                 this.elementConfig.type = topic.type
                 if (this.paper.info.type === 2) {
-                    this.elementConfig.referenceAnswers = this.paper.referenceAnswers[topic.id]
-                }
+                    if (this.paper.referenceAnswers[topic.id] === undefined) {
+                        if (topic.type === 'singleChoice') {
+                            this.elementConfig.referenceAnswers = ''
+                        } else {
+                            this.elementConfig.referenceAnswers = []
+                        }
+                    } else {
+                        this.elementConfig.referenceAnswers = this.paper.referenceAnswers[topic.id]
+                    }
+               }
                 if (topic.type === 'singleChoice' || topic.type === 'multipleChoice') {
                     this.elementConfig.labelHidden = topic.config.labelHidden
                     this.elementConfig.answers = topic.answer
@@ -446,24 +523,39 @@
                 } else {
                     this.elementConfig.onlyTitle = true
                 }
+                if (topic.type === 'fillBlank') {
+                    if (topic.partCount != null && topic.partCount > 1) {
+                        this.elementConfig.partCount = topic.partCount
+                    } else {
+                        this.elementConfig.partCount = 1
+                    }
+                    if (topic.fillAnswerSort != null ) {
+                        this.elementConfig.fillAnswerSort = topic.fillAnswerSort
+                    } else {
+                        this.elementConfig.fillAnswerSort = 0
+                    }
+                    
+                }
                 this.paper.topicAreas.forEach(area => {
                     const temp = area.topics.find(t => t.id === this.currentTopicId)
                     if (temp != null) {
                         if (topic.type === 'singleChoice') {
-                            this.elementConfig.titleNumber = '单选题：  ' + area.title + '-' + (index + 1)
+                            this.elementConfig.titleNumber = '单选题：  ' + area.title + '-' + (topic.index)
                         } else if (topic.type === 'multipleChoice'){
-                            this.elementConfig.titleNumber = '多选题：  ' + area.title + '-' + (index + 1)
+                            this.elementConfig.titleNumber = '多选题：  ' + area.title + '-' + (topic.index)
                         } else if (topic.type === 'fillBlank') {
-                            this.elementConfig.titleNumber = '填空题：  ' + area.title + '-' + (index + 1)
+                            this.elementConfig.titleNumber = '填空题：  ' + area.title + '-' + (topic.index)
                         } else if (topic.type === 'areaQuestion') {
-                            this.elementConfig.titleNumber = '问答题：  ' + area.title + '-' + (index + 1)
+                            this.elementConfig.titleNumber = '问答题：  ' + area.title + '-' + (topic.index)
                         }
                         if (this.paper.info.type === 2) {
                             // 设置分数
                             if (topic.score > 0) {
                                 this.elementConfig.score = topic.score
+                                this.elementConfig.partScore = topic.partScore
                             } else {
                                 this.elementConfig.score = area.score
+                                this.elementConfig.partScore = topic.partScore
                             }
                         }
                     }
@@ -475,6 +567,8 @@
                 this.areaConfig.titleNumber = '区域：  ' + area.title 
                 this.areaConfig.title = area.title 
                 this.areaConfig.score = area.score
+                this.areaConfig.areaNameHidden = area.areaNameHidden
+                this.areaConfig.align = area.align
             },
             handlerSummaryChoice() {
                 this.rightTab = 'summaryConfig'
@@ -501,6 +595,14 @@
                 const area = this.getSelectedArea()
                 area.score = value
             },
+            changeAreaAlign(value) {
+                const area = this.getSelectedArea()
+                area.align = value
+            },
+            changeAreaLabelHidden(value) {
+                const area = this.getSelectedArea()
+                area.areaNameHidden = value
+            },
             changeLabelHidden(value) {
                 const topic = this.getSelectedTopic()
                 topic.config.labelHidden = value
@@ -508,13 +610,27 @@
             changeElementScore(value) {
                 const topic = this.getSelectedTopic()
                 topic.score = value
+                this.staticScore()
+            },
+            changeElementPartCount(value) {
+                const topic = this.getSelectedTopic()
+                topic.partCount = value
+            },
+            changeElementPartScore(value) {
+                const topic = this.getSelectedTopic()
+                topic.partScore = value
             },
             changeTitle(value) {
                 const topic = this.getSelectedTopic()
                 topic.title = value   
             },
             changeReferenceAnswers(value) {
+                console.log()
                 this.paper.referenceAnswers[this.getSelectedTopic().id] = value
+            },
+            changeFillReferenceAnswers() {
+                this.paper.referenceAnswers[this.getSelectedTopic().id] = this.elementConfig.referenceAnswers
+
             },
             addChoice() {
                 this.elementConfig.answers.push({'label': '', 'content': ''})
@@ -526,10 +642,23 @@
                 const topic = this.getSelectedTopic()
                 topic.config.column = value
             },
+            changefillAnswerSort(value) {
+                const topic = this.getSelectedTopic()
+                console.log(value)
+                topic.fillAnswerSort = value
+            },
             changeSummaryTitle(value) {
                 this.paper.titleArea.content = value
             },
-            
+            staticScore() {
+                //计算总分数
+                this.currentScore = 0
+                this.paper.topicAreas.forEach(area => {
+                    area.topics.forEach(topic => {
+                        this.currentScore += topic.score
+                    })
+                })
+            },
             handleTabClick(value) {
 
             },
@@ -552,18 +681,24 @@
                 })
             },
             savePaper() {
-                updateLayout(this.paper).then(response => {
-                    if (response.code == 0) {
-                        ElMessage({
-                            message: '修改布局成功',
-                            type: 'success',
-                        })
-                        this.$router.push({
-                            path: "index"
-                        })
-                    }
-                })
-
+                if (this.currentScore > this.paper.info.score) {
+                    ElMessage({
+                        message: '当前已设置分数超过总分数，请重新设置',
+                        type: 'error',
+                    })
+                } else {
+                    updateLayout(this.paper).then(response => {
+                        if (response.code == 0) {
+                            ElMessage({
+                                message: '修改布局成功',
+                                type: 'success',
+                            })
+                            this.$router.push({
+                                path: "index"
+                            })
+                        }
+                    })
+                }
             },
             queryPaperAndAnswerInfo() {
                 queryPaperAndAnswer({id : this.paperId}).then(response => {
@@ -580,6 +715,7 @@
                         if (response.content.referenceAnswers != null) {
                             this.paper.referenceAnswers = response.content.referenceAnswers
                         }
+                        this.staticScore()
                         this.clearConfig()
                     }
                 })
@@ -603,6 +739,14 @@
         width: 100%;
         height: 50px;
         background: #EBEEF5;
+
+        .paper-header-left {
+            padding-left: 10px;
+            padding-right: 20px;
+            float: left;
+            line-height: 50px;
+        }
+
 
         .paper-header-right {
             padding-right: 20px;

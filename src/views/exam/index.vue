@@ -27,7 +27,10 @@
                 <el-table-column label="状态" prop="statusName" align="center"></el-table-column>
                 <el-table-column label="操作" align="center" width="300" class-name="small-padding fixed-width">
                     <template #default="scope">
-                        <el-button v-if="scope.row.statusName === '待考试'" type="primary" size="small" @click="handlerExam(scope.row.paperId, scope.row.id)">
+                        <!-- v-if="showStartExam(scope.row)"  -->
+                        <el-button 
+                        
+                        type="primary" size="small" @click="handlerExam(scope.row.paperId, scope.row.id, scope.row.publishPaperId)">
                             开始考试
                         </el-button>
                         <el-button v-if="scope.row.statusName === '已提交'" type="primary" size="small" @click="handlerQueryExam(scope.row.paperId, scope.row.id)">
@@ -44,7 +47,8 @@
 
 <script>
     import { Edit,Search  } from '@element-plus/icons-vue' 
-    import { queryExamByUserId } from '@/api/exam'
+    import { queryExamByUserId, encrypt, decrypt } from '@/api/exam'
+    import rsa from '@/utils/rsa'
 
 
     export default {
@@ -66,6 +70,7 @@
             }
         },
         created() {
+
              this.queryExamByUserId()
         },
         methods: {
@@ -80,25 +85,43 @@
             handleFilter() {
                 this.queryExamByUserId()
             },
-            handlerExam(paperId, examId) {
-                this.$router.push({path: '/info',//rooter配置的name值
-                    query:{
-                        paperId: paperId,
-                        examId: examId,
-                        userId: this.userId,
-                        disable: false
-                    }
-                });
+            handlerExam(paperId, examId, publishPaperId) {
+                let query = {
+                    paperId: paperId,
+                    examId: examId,
+                    userId: this.userId,
+                    publishPaperId: publishPaperId,
+                    disable: false
+                }
+                encrypt(query).then(response => {
+                    this.$router.push({path: '/info',//rooter配置的name值
+                        query:{
+                            t: response.content
+                        }
+                    });
+                })
             },
             handlerQueryExam(paperId, examId) {
-                this.$router.push({path: '/info',//rooter配置的name值
-                    query:{
-                        paperId: paperId,
-                        examId: examId,
-                        userId: this.userId,
-                        disable: true
-                    }
-                });
+                let query = {
+                    paperId: paperId,
+                    examId: examId,
+                    userId: this.userId,
+                    disable: true
+                }
+                encrypt(query).then(response => {
+                    this.$router.push({path: '/info',//rooter配置的name值
+                        query:{
+                            t: response.content
+                        }
+                    });
+                })
+            },
+            showStartExam(exam) {
+                let curDate = new Date()
+                if (exam.statusName === '待考试' && curDate >= new Date(exam.startTime) && curDate <= new Date(exam.endTime)) {
+                    return true
+                }
+                return false;
             },
             resetPaper() {
                 this.publishPaper = {

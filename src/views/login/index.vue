@@ -79,8 +79,6 @@ export default {
           console.log(query)
           this.redirect = query.redirect
           this.otherQuery = this.getOtherQuery(query)
-          console.log(this.redirect)
-          console.log(this.otherQuery)
         }
       },
       immediate: true

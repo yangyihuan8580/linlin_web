@@ -3,8 +3,13 @@
         <div class="answer">
             <el-row>
                   <el-input 
-                        v-model="inputValue" 
+                        
+                        class="inputClass"
+                        v-for="index in fillBlank.partCount"
+                        :key = "index"
+                        v-model="inputValue[index - 1]" 
                         @input="changeInput"
+                        width="50px"
                         :disabled="disable"/>
             </el-row>
         </div>
@@ -33,14 +38,16 @@ export default {
         return {
             type: "fillBlank",
             fillBlank: this.initChoice,
-            inputValue: ''
+            inputValue: []
         }
     },
     computed() {
         
     },
     mounted() {
-        this.inputValue = this.answer[this.fillBlank.id]
+        if (this.answer[this.fillBlank.id] != undefined) {
+            this.inputValue = this.answer[this.fillBlank.id]
+        }
     },
     methods: {
         changeInput() {
@@ -53,16 +60,21 @@ export default {
 
 
 
-<style lang="scss">
+<style lang="scss" scoped>
 
-    .singleChoice {
+    .fillBlank {
         padding: 5px 5px 5px 5px ;
     
-    
+        .inputClass {
+            width: 200px;
+            margin-right: 8px;
+        }
+
         .answer {
             margin-top: 5px;
             padding-left: 15px;
         }
+
 
     }
 

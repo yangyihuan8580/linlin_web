@@ -61,13 +61,13 @@ export default {
 <style lang="scss">
 
     .singleChoice {
-        padding: 5px 5px 5px 5px ;
+        // padding: 5px 5px 5px 5px ;
         width: 100%;
     
     
         .answer {
             width: 100%;
-            margin-top: 5px;
+            // margin-top: 5px;
             padding-left: 15px;
         }
 
